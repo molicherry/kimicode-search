@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero">
+  <div class="card">
+    <div class="badge info">我的凭据</div>
+    <h2 class="page-section-title">我的用户 API</h2>
+    <p class="page-section-subtitle">用于创建并管理自己的平台用户 API，并通过搜索、筛选和分页查看当前凭据。</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">API 数量</div><div class="stat-value">{{ usage.api_count }}</div></div>
+    <div class="stat"><div class="stat-label">总调用</div><div class="stat-value">{{ usage.total_logs }}</div></div>
+    <div class="stat"><div class="stat-label">成功调用</div><div class="stat-value">{{ usage.success_logs }}</div></div>
+  </div>
+</div>
+
+{% if new_key_value %}
+<div class="card">
+  <div class="badge success">一次性密钥提示</div>
+  <h2 class="page-section-title">新的用户 API 已生成</h2>
+  <p class="page-section-subtitle">完整平台用户 API 只展示一次，请立即复制保存。</p>
+  <div class="copy-field">
+    <input value="{{ new_key_value }}" readonly />
+    <button type="button" onclick='copyValue({{ new_key_value|tojson }}, this)'>复制用户 API</button>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="page-section-title">创建新的用户 API</h2>
+  <p class="page-section-subtitle">新建后会提供一键复制按钮，便于立即发给客户端或保存到安全位置。</p>
+  <form action="/web/me/api-keys" method="post" class="row">
+    <div>
+      <label>名称</label>
+      <input type="text" name="name" required />
+    </div>
+    <div>
+      <label>搜索请求 RPM</label>
+      <input type="number" name="search_rpm" value="60" min="1" required />
+    </div>
+    <div>
+      <label>抓取请求 RPM</label>
+      <input type="number" name="fetch_rpm" value="60" min="1" required />
+    </div>
+    <div>
+      <label>过期时间（ISO，可空）</label>
+      <input type="text" name="expires_at" placeholder="2026-12-31T00:00:00+00:00" />
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <button type="submit">创建我的 API</button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2 class="page-section-title">当前 API 列表</h2>
+  <p class="page-section-subtitle">支持按名称、前缀和状态筛选，并按页查看结果。</p>
+  <form method="get" class="filter-bar">
+    <div>
+      <label>按名称或前缀搜索</label>
+      <input type="text" name="search" value="{{ filters.search }}" placeholder="请输入名称或前缀关键词" />
+    </div>
+    <div>
+      <label>按状态筛选</label>
+      <select name="status">
+        <option value="">全部状态</option>
+        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>已启用</option>
+        <option value="disabled" {% if filters.status == 'disabled' %}selected{% endif %}>已禁用</option>
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button type="submit">应用筛选</button>
+      <a class="button" href="/web/me/api-keys">清空条件</a>
+    </div>
+  </form>
+  <table>
+    <thead>
+      <tr><th>ID</th><th>名称</th><th>用户 API</th><th>状态</th><th>RPM</th><th>最后使用</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+      {% for api_key in api_keys %}
+        <tr>
+          <td>{{ api_key.id }}</td>
+          <td>{{ api_key.name }}</td>
+          <td>
+            <div class="key-cell">
+              <span class="key-mask">{{ api_key.key_prefix }}</span>
+              <button type="button" class="copy-key-btn" onclick='copyValue({{ api_key.raw_key|tojson }}, this)'>复制</button>
+            </div>
+          </td>
+          <td><span class="badge {{ 'success' if api_key.is_active else 'warn' }}">{{ "已启用" if api_key.is_active else "已禁用" }}</span></td>
+          <td><span class="badge info">search {{ api_key.search_rpm }}</span> <span class="badge info">fetch {{ api_key.fetch_rpm }}</span></td>
+          <td>{{ api_key.last_used_at or '-' }}</td>
+          <td>
+            <form class="inline" action="/web/me/api-keys/{{ api_key.id }}/delete" method="post" data-confirm="确认删除该 API？此操作不可撤销。">
+              <button class="danger" type="submit">删除</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if not api_keys %}
+    <div class="empty-state">当前筛选条件下没有找到用户 API，请调整条件后重试。</div>
+  {% endif %}
+  <div class="pagination">
+    <div class="muted">共 {{ pagination.total }} 条结果，当前第 {{ pagination.page }} / {{ pagination.total_pages }} 页。</div>
+    <div class="pagination-links">
+      {% for page_number in pagination.page_numbers %}
+        <a class="page-chip {% if page_number == pagination.page %}active{% endif %}" href="?search={{ filters.search | urlencode }}&status={{ filters.status }}&page={{ page_number }}">{{ page_number }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

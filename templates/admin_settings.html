@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width: 760px;">
+  <h2 class="page-section-title">系统设置</h2>
+  <p class="page-section-subtitle">调整日志级别与日志预览长度，影响控制台和审计展示体验。</p>
+  <form action="/web/admin/settings" method="post">
+    <label>日志等级</label>
+    <input type="text" name="log_level" value="{{ log_level }}" />
+    <label>日志预览字节数</label>
+    <input type="text" name="log_preview_bytes" value="{{ log_preview_bytes }}" />
+    <div style="margin-top: 12px;">
+      <button type="submit">保存设置</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

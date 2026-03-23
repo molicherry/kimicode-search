@@ -1,0 +1,5 @@
+.ace-tool/
+__pycache__/
+.env.production
+data/
+logs/

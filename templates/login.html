@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block unauthenticated_content %}
+<div class="login-shell">
+  <div class="login-card">
+    <div class="hero-badge">托管控制台模式</div>
+    <h1 class="headline" style="margin-top: 16px;">登录控制台</h1>
+    <p class="subheadline" style="margin-bottom: 24px;">面向多账户与共享 Kimi 密钥池的现代化 Kimi API 管理后台。</p>
+    {% if message %}
+      <div class="message">{{ message }}</div>
+    {% endif %}
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+    <form action="/web/login" method="post">
+      <div style="margin-bottom: 14px;">
+        <label>用户名</label>
+        <input type="text" name="username" required />
+      </div>
+      <div style="margin-bottom: 6px;">
+        <label>密码</label>
+        <input type="password" name="password" required />
+      </div>
+      <div style="margin-top: 18px;">
+        <button type="submit" style="width: 100%;">进入控制台</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

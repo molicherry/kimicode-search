@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ title if title else "Kimi Coding MCP" }}</title>
+    <style>
+      :root,
+      html[data-theme="dark"] {
+        --bg: #0b1020;
+        --bg-secondary: #111827;
+        --panel: rgba(15, 23, 42, 0.88);
+        --panel-soft: rgba(30, 41, 59, 0.75);
+        --panel-border: rgba(148, 163, 184, 0.18);
+        --text: #e2e8f0;
+        --text-strong: #f8fafc;
+        --muted: #94a3b8;
+        --accent: #7c3aed;
+        --accent-2: #06b6d4;
+        --success: #22c55e;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --shadow: 0 24px 70px rgba(2, 8, 23, 0.38);
+        --surface-input: rgba(15, 23, 42, 0.9);
+        --surface-table: rgba(15, 23, 42, 0.78);
+        --sidebar-bg: rgba(2, 6, 23, 0.72);
+        --sidebar-card: rgba(15, 23, 42, 0.7);
+        --nav-hover: rgba(124, 58, 237, 0.16);
+        --page-bg:
+          radial-gradient(circle at top left, rgba(124, 58, 237, 0.28), transparent 24%),
+          radial-gradient(circle at top right, rgba(6, 182, 212, 0.22), transparent 28%),
+          linear-gradient(180deg, #020617 0%, #0f172a 100%);
+        --badge-default-bg: rgba(148, 163, 184, 0.2);
+        --badge-default-text: #e2e8f0;
+        --badge-info-bg: rgba(59, 130, 246, 0.22);
+        --badge-info-text: #dbeafe;
+        --badge-success-bg: rgba(34, 197, 94, 0.2);
+        --badge-success-text: #dcfce7;
+        --badge-warn-bg: rgba(245, 158, 11, 0.22);
+        --badge-warn-text: #fef3c7;
+      }
+      html[data-theme="light"] {
+        --bg: #eef2ff;
+        --bg-secondary: #f8fafc;
+        --panel: rgba(255, 255, 255, 0.88);
+        --panel-soft: rgba(241, 245, 249, 0.88);
+        --panel-border: rgba(15, 23, 42, 0.09);
+        --text: #0f172a;
+        --text-strong: #020617;
+        --muted: #475569;
+        --accent: #6d28d9;
+        --accent-2: #0891b2;
+        --success: #16a34a;
+        --danger: #dc2626;
+        --warning: #d97706;
+        --shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+        --surface-input: rgba(255, 255, 255, 0.96);
+        --surface-table: rgba(255, 255, 255, 0.92);
+        --sidebar-bg: rgba(255, 255, 255, 0.76);
+        --sidebar-card: rgba(248, 250, 252, 0.92);
+        --nav-hover: rgba(109, 40, 217, 0.1);
+        --page-bg:
+          radial-gradient(circle at top left, rgba(99, 102, 241, 0.16), transparent 24%),
+          radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 28%),
+          linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+        --badge-default-bg: rgba(148, 163, 184, 0.18);
+        --badge-default-text: #1e293b;
+        --badge-info-bg: rgba(37, 99, 235, 0.16);
+        --badge-info-text: #1d4ed8;
+        --badge-success-bg: rgba(22, 163, 74, 0.14);
+        --badge-success-text: #166534;
+        --badge-warn-bg: rgba(217, 119, 6, 0.16);
+        --badge-warn-text: #92400e;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--page-bg);
+        color: var(--text);
+        transition: background 0.25s ease, color 0.25s ease;
+      }
+      a { color: #c4b5fd; text-decoration: none; }
+      a:hover { color: #ddd6fe; }
+      .layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 100vh; }
+      .sidebar {
+        padding: 28px 20px;
+        border-right: 1px solid var(--panel-border);
+        background: var(--sidebar-bg);
+        backdrop-filter: blur(18px);
+      }
+      .brand { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+      .brand-subtitle { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+      .nav-section { margin-bottom: 22px; }
+      .nav-title { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; margin-bottom: 10px; }
+      .nav-link {
+        display: block;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        border-radius: 12px;
+        color: var(--text);
+        background: transparent;
+        transition: 0.2s ease;
+      }
+      .nav-link:hover, .nav-link.active { background: var(--nav-hover); color: var(--text-strong); }
+      .sidebar-user {
+        margin-top: auto;
+        padding: 16px;
+        border-radius: 16px;
+        background: var(--sidebar-card);
+        border: 1px solid var(--panel-border);
+      }
+      .main { padding: 28px; }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+      .headline { font-size: 28px; font-weight: 800; margin: 0 0 4px 0; }
+      .subheadline { color: var(--muted); margin: 0; }
+      .surface,
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+      .stat {
+        padding: 12px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, var(--panel-soft), var(--panel));
+        border: 1px solid rgba(148,163,184,0.16);
+      }
+      .stat-label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+      .stat-value { font-size: 28px; font-weight: 800; margin-top: 6px; }
+      .message, .error {
+        padding: 12px 14px;
+        border-radius: 14px;
+        margin-bottom: 14px;
+        border: 1px solid transparent;
+      }
+      .message { color: #dcfce7; background: rgba(34, 197, 94, 0.14); border-color: rgba(34, 197, 94, 0.28); }
+      .error { color: #fee2e2; background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.28); }
+      .muted { color: var(--muted); font-size: 12px; }
+      .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .row-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      label { display: block; color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+      input, select, textarea {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: var(--surface-input);
+        color: var(--text);
+        outline: none;
+      }
+      select[multiple] { min-height: 124px; }
+      input:focus, select:focus, textarea:focus {
+        border-color: rgba(124, 58, 237, 0.6);
+        box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.18);
+      }
+      textarea { min-height: 96px; resize: vertical; }
+      button, .button {
+        border: 0;
+        border-radius: 10px;
+        padding: 8px 12px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 14px 26px rgba(124, 58, 237, 0.28);
+      }
+      button.secondary, .button.secondary {
+        background: rgba(148, 163, 184, 0.12);
+        box-shadow: none;
+        color: var(--text);
+        border: 1px solid rgba(148,163,184,0.18);
+      }
+      button.danger { background: linear-gradient(135deg, #ef4444, #f97316); }
+      form.inline { display: inline-flex; gap: 6px; align-items: center; }
+      table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+      th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; text-align: left; padding: 0 10px 6px; }
+      td {
+        padding: 10px 10px;
+        background: var(--surface-table);
+        border-top: 1px solid rgba(148,163,184,0.12);
+        border-bottom: 1px solid rgba(148,163,184,0.12);
+        vertical-align: top;
+      }
+      td:first-child { border-left: 1px solid rgba(148,163,184,0.12); border-radius: 14px 0 0 14px; }
+      td:last-child { border-right: 1px solid rgba(148,163,184,0.12); border-radius: 0 14px 14px 0; }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: var(--badge-default-bg);
+        color: var(--badge-default-text);
+      }
+      .badge.success { background: var(--badge-success-bg); color: var(--badge-success-text); }
+      .badge.warn { background: var(--badge-warn-bg); color: var(--badge-warn-text); }
+      .badge.info { background: var(--badge-info-bg); color: var(--badge-info-text); }
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.24), rgba(6, 182, 212, 0.24));
+        color: var(--text-strong);
+        border: 1px solid rgba(99, 102, 241, 0.28);
+      }
+      .copy-field {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+        margin-top: 8px;
+      }
+      .copy-field input { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .key-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .key-mask {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 8px;
+        border-radius: 10px;
+        background: var(--panel-soft);
+        border: 1px solid var(--panel-border);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        color: var(--text-strong);
+      }
+      .copy-key-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(124, 58, 237, 0.18);
+        background: rgba(124, 58, 237, 0.08);
+        color: var(--text-strong);
+        box-shadow: none;
+      }
+      .copy-key-btn:hover {
+        border-color: rgba(124, 58, 237, 0.38);
+        background: rgba(124, 58, 237, 0.14);
+      }
+      .page-section-title { margin: 0 0 4px 0; font-size: 18px; }
+      .page-section-subtitle { margin: 0 0 14px 0; color: var(--muted); }
+      .login-shell {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .login-card {
+        width: min(480px, 100%);
+        padding: 22px;
+        border-radius: 24px;
+        background: var(--panel);
+        border: 1px solid rgba(148,163,184,0.14);
+        box-shadow: var(--shadow);
+      }
+      .flash-stack {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: min(420px, calc(100vw - 32px));
+      }
+      .toast {
+        padding: 14px 16px;
+        border-radius: 16px;
+        border: 1px solid rgba(148,163,184,0.18);
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        color: var(--text);
+        animation: slideIn 0.22s ease;
+      }
+      .toolbar-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .theme-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        color: var(--text);
+        box-shadow: none;
+      }
+      .theme-toggle-label { font-weight: 700; }
+      .filter-bar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .filter-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: flex-end;
+      }
+      .pagination {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        margin-top: 14px;
+      }
+      .pagination-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .page-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 38px;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 12px;
+        border: 1px solid var(--panel-border);
+        background: var(--panel);
+        color: var(--text);
+      }
+      .page-chip.active {
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #fff;
+      }
+      .main-content {
+        min-height: 0;
+      }
+      .content-loading {
+        opacity: 0.7;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+      }
+      .selector-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 8px;
+      }
+      .selector-option {
+        position: relative;
+      }
+      .selector-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .selector-option span {
+        display: block;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--panel-border);
+        background: var(--surface-input);
+        color: var(--text);
+        cursor: pointer;
+        transition: 0.2s ease;
+      }
+      .selector-option input:checked + span {
+        border-color: rgba(124, 58, 237, 0.55);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+        background: var(--nav-hover);
+      }
+      .empty-state {
+        padding: 18px;
+        border-radius: 14px;
+        border: 1px dashed var(--panel-border);
+        color: var(--muted);
+        text-align: center;
+      }
+      .multi-select-panel {
+        display: grid;
+        gap: 10px;
+        position: relative;
+      }
+      .multi-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--panel-border);
+        background: var(--surface-input);
+        color: var(--text);
+        cursor: pointer;
+        box-shadow: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+      .multi-select-trigger:hover {
+        border-color: rgba(124, 58, 237, 0.35);
+      }
+      .multi-select-trigger.is-open {
+        border-color: rgba(124, 58, 237, 0.55);
+        box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
+      }
+      .multi-select-trigger-text {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .multi-select-trigger-placeholder {
+        color: var(--muted);
+      }
+      .multi-select-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        z-index: 30;
+        padding: 14px;
+        border-radius: 18px;
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        box-shadow: var(--shadow);
+        display: none;
+        gap: 12px;
+      }
+      .multi-select-dropdown.open {
+        display: grid;
+      }
+      .multi-select-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+      }
+      .multi-select-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .multi-select-search {
+        width: 100%;
+      }
+      .multi-select-options {
+        display: grid;
+        gap: 8px;
+        max-height: 240px;
+        overflow: auto;
+        padding-right: 2px;
+      }
+      .multi-select-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--panel-border);
+        background: var(--panel-soft);
+        cursor: pointer;
+      }
+      .multi-select-option:hover {
+        background: var(--nav-hover);
+      }
+      .multi-select-option input {
+        width: auto;
+        margin: 0;
+      }
+      .multi-select-option-label {
+        color: var(--text-strong);
+        font-weight: 700;
+      }
+      .selected-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: var(--nav-hover);
+        border: 1px solid rgba(124, 58, 237, 0.2);
+        color: var(--text-strong);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .selected-tag button {
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        color: inherit;
+        padding: 0;
+        font-size: 14px;
+      }
+      .toast.success { border-color: rgba(34, 197, 94, 0.32); }
+      .toast.error { border-color: rgba(239, 68, 68, 0.34); }
+      .toast-title { font-weight: 800; margin-bottom: 4px; }
+      .toast-body { color: var(--muted); font-size: 13px; }
+      .hidden { display: none !important; }
+      @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-8px) translateX(8px); }
+        to { opacity: 1; transform: translateY(0) translateX(0); }
+      }
+      @media (max-width: 980px) {
+        .layout { grid-template-columns: 1fr; }
+        .sidebar { border-right: 0; border-bottom: 1px solid var(--panel-border); }
+        .hero, .row, .row-3 { grid-template-columns: 1fr; }
+      }
+    </style>
+    <script>
+      const THEME_STORAGE_KEY = 'kimi-console-theme';
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        const toggleLabel = document.getElementById('theme-toggle-label');
+        if (toggleLabel) {
+          toggleLabel.textContent = theme === 'light' ? '白天模式' : '夜间模式';
+        }
+        const toggleIcon = document.getElementById('theme-toggle-icon');
+        if (toggleIcon) {
+          toggleIcon.textContent = theme === 'light' ? '☀️' : '🌙';
+        }
+      }
+
+      function preferredTheme() {
+        const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+        if (stored === 'light' || stored === 'dark') {
+          return stored;
+        }
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+
+      function showToast(kind, title, body) {
+        const stack = document.getElementById('flash-stack');
+        if (!stack) {
+          return;
+        }
+        const toast = document.createElement('div');
+        toast.className = `toast ${kind}`;
+        toast.innerHTML = `<div class="toast-title">${title}</div><div class="toast-body">${body}</div>`;
+        stack.appendChild(toast);
+        window.setTimeout(() => {
+          toast.remove();
+        }, 2600);
+      }
+
+      async function copyValue(value, trigger) {
+        const originalLabel = trigger ? trigger.textContent : '';
+        try {
+          await navigator.clipboard.writeText(value);
+          if (trigger) {
+            trigger.textContent = '已复制';
+            trigger.disabled = true;
+            window.setTimeout(() => {
+              trigger.textContent = originalLabel;
+              trigger.disabled = false;
+            }, 1400);
+          }
+          showToast('success', '复制成功', '已复制到剪贴板。');
+        } catch (error) {
+          window.prompt('复制失败，请手动复制以下内容：', value);
+          showToast('error', '复制失败', '浏览器拒绝了剪贴板访问，已回退到手动复制。');
+        }
+      }
+
+      function syncHiddenInputs(root, selectedValues) {
+        root.querySelectorAll('input[type="hidden"][data-group-input]').forEach((input) => input.remove());
+        const form = root.closest('form');
+        if (!form) {
+          return;
+        }
+        selectedValues.forEach((value) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'group_ids';
+          input.value = value;
+          input.setAttribute('data-group-input', 'true');
+          form.appendChild(input);
+        });
+      }
+
+      function refreshMultiSelectPanel(root) {
+        const options = root.querySelectorAll('[data-option-value]');
+        const triggerText = root.querySelector('[data-trigger-text]');
+        if (!options.length || !triggerText) {
+          return;
+        }
+
+        const selectedOptions = Array.from(options).filter((option) => option.checked);
+        const selectedValues = selectedOptions.map((option) => option.value);
+        syncHiddenInputs(root, selectedValues);
+
+        if (selectedOptions.length === 0) {
+          triggerText.innerHTML = '<span class="multi-select-trigger-placeholder">请选择一个或多个项目</span>';
+          return;
+        }
+
+        triggerText.innerHTML = '';
+        selectedOptions.forEach((option) => {
+          const text = document.createElement('span');
+          text.textContent = option.getAttribute('data-option-label') || option.value;
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.textContent = '×';
+          remove.setAttribute('aria-label', `移除 ${text.textContent}`);
+          remove.addEventListener('click', () => {
+            option.checked = false;
+            refreshMultiSelectPanel(root);
+          });
+
+          const compactTag = document.createElement('span');
+          compactTag.className = 'selected-tag';
+          const compactText = document.createElement('span');
+          compactText.textContent = text.textContent;
+          const compactRemove = document.createElement('button');
+          compactRemove.type = 'button';
+          compactRemove.textContent = '×';
+          compactRemove.setAttribute('aria-label', `移除 ${text.textContent}`);
+          compactRemove.addEventListener('click', (event) => {
+            event.stopPropagation();
+            option.checked = false;
+            refreshMultiSelectPanel(root);
+          });
+          compactTag.appendChild(compactText);
+          compactTag.appendChild(compactRemove);
+          triggerText.appendChild(compactTag);
+        });
+      }
+
+      function filterMultiSelectOptions(root, keyword) {
+        const normalized = keyword.trim().toLowerCase();
+        root.querySelectorAll('.multi-select-option').forEach((option) => {
+          const label = (option.getAttribute('data-search-text') || '').toLowerCase();
+          option.style.display = label.includes(normalized) ? '' : 'none';
+        });
+      }
+
+      function setupMultiSelectPanels() {
+        document.querySelectorAll('[data-multi-select-root]').forEach((root) => {
+          const trigger = root.querySelector('[data-multi-select-trigger]');
+          const dropdown = root.querySelector('[data-multi-select-dropdown]');
+          const search = root.querySelector('[data-multi-select-search]');
+          const options = root.querySelectorAll('[data-option-value]');
+          const selectAll = root.querySelector('[data-select-all]');
+          const clearAll = root.querySelector('[data-clear-all]');
+          if (!trigger || !dropdown || !options.length) {
+            return;
+          }
+
+          trigger.addEventListener('click', () => {
+            const isOpen = dropdown.classList.toggle('open');
+            trigger.classList.toggle('is-open', isOpen);
+            if (isOpen && search) {
+              search.focus();
+            }
+          });
+
+          options.forEach((option) => {
+            option.addEventListener('change', () => refreshMultiSelectPanel(root));
+          });
+
+          if (search) {
+            search.addEventListener('input', () => {
+              filterMultiSelectOptions(root, search.value);
+            });
+          }
+
+          if (selectAll) {
+            selectAll.addEventListener('click', () => {
+              options.forEach((option) => {
+                option.checked = true;
+              });
+              refreshMultiSelectPanel(root);
+            });
+          }
+
+          if (clearAll) {
+            clearAll.addEventListener('click', () => {
+              options.forEach((option) => {
+                option.checked = false;
+              });
+              refreshMultiSelectPanel(root);
+            });
+          }
+
+          document.addEventListener('click', (event) => {
+            if (!root.contains(event.target)) {
+              dropdown.classList.remove('open');
+              trigger.classList.remove('is-open');
+            }
+          });
+
+          refreshMultiSelectPanel(root);
+        });
+      }
+
+      function bindThemeToggle(root = document) {
+        const toggle = root.getElementById ? root.getElementById('theme-toggle') : document.getElementById('theme-toggle');
+        if (!toggle || toggle.dataset.bound === 'true') {
+          return;
+        }
+        toggle.dataset.bound = 'true';
+        toggle.addEventListener('click', () => {
+          const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+          const next = current === 'light' ? 'dark' : 'light';
+          window.localStorage.setItem(THEME_STORAGE_KEY, next);
+          applyTheme(next);
+          showToast('success', '主题已切换', next === 'light' ? '已切换到白天模式。' : '已切换到夜间模式。');
+        });
+      }
+
+      function bindConfirmForms(root = document) {
+        root.querySelectorAll('form[data-confirm]').forEach((form) => {
+          if (form.dataset.confirmBound === 'true') {
+            return;
+          }
+          form.dataset.confirmBound = 'true';
+          form.addEventListener('submit', (event) => {
+            const message = form.getAttribute('data-confirm') || '确认继续执行该操作？';
+            if (!window.confirm(message)) {
+              event.preventDefault();
+            }
+          });
+        });
+      }
+
+      function reinitializeUi(root = document) {
+        applyTheme(preferredTheme());
+        bindThemeToggle(root);
+        bindConfirmForms(root);
+        setupMultiSelectPanels();
+      }
+
+      async function loadWebContent(url, options = {}) {
+        const mainContent = document.getElementById('main-content');
+        if (!mainContent) {
+          window.location.href = url;
+          return;
+        }
+
+        mainContent.classList.add('content-loading');
+        try {
+          const response = await fetch(url, {
+            headers: {
+              'X-Requested-With': 'fetch',
+            },
+            ...options,
+          });
+
+          if (response.redirected) {
+            return loadWebContent(response.url);
+          }
+
+          const html = await response.text();
+          const parser = new DOMParser();
+          const nextDocument = parser.parseFromString(html, 'text/html');
+          const nextMain = nextDocument.getElementById('main-content');
+          if (!nextMain) {
+            window.location.href = url;
+            return;
+          }
+
+          const nextTitle = nextDocument.querySelector('title');
+          if (nextTitle) {
+            document.title = nextTitle.textContent || document.title;
+          }
+
+          mainContent.innerHTML = nextMain.innerHTML;
+
+          const nextTopbarHeadline = nextDocument.querySelector('.headline');
+          const currentTopbarHeadline = document.querySelector('.headline');
+          if (nextTopbarHeadline && currentTopbarHeadline) {
+            currentTopbarHeadline.textContent = nextTopbarHeadline.textContent;
+          }
+
+          const nextTopbarSubheadline = nextDocument.querySelector('.topbar .subheadline');
+          const currentTopbarSubheadline = document.querySelector('.topbar .subheadline');
+          if (nextTopbarSubheadline && currentTopbarSubheadline) {
+            currentTopbarSubheadline.textContent = nextTopbarSubheadline.textContent;
+          }
+
+          document.querySelectorAll('.nav-link').forEach((link) => {
+            link.classList.toggle('active', link.getAttribute('href') === new URL(url, window.location.origin).pathname);
+          });
+
+          reinitializeUi(document);
+
+          if (!options.replaceHistory) {
+            window.history.pushState({ url }, '', url);
+          }
+        } catch (error) {
+          window.location.href = url;
+        } finally {
+          mainContent.classList.remove('content-loading');
+        }
+      }
+
+      function setupAsyncNavigation() {
+        document.addEventListener('click', (event) => {
+          const link = event.target.closest('a[href]');
+          if (!link) {
+            return;
+          }
+          const href = link.getAttribute('href') || '';
+          if (!href.startsWith('/web/')) {
+            return;
+          }
+          if (link.hasAttribute('data-no-ajax')) {
+            return;
+          }
+          event.preventDefault();
+          loadWebContent(href);
+        });
+
+        document.addEventListener('submit', (event) => {
+          const form = event.target;
+          if (!(form instanceof HTMLFormElement)) {
+            return;
+          }
+          if (!document.getElementById('main-content')) {
+            return;
+          }
+          const action = form.getAttribute('action') || window.location.pathname;
+          if (!action.startsWith('/web/')) {
+            return;
+          }
+          event.preventDefault();
+
+          const formData = new FormData(form);
+          const method = (form.getAttribute('method') || 'get').toUpperCase();
+          if (method === 'GET') {
+            const query = new URLSearchParams(formData).toString();
+            loadWebContent(query ? `${action}?${query}` : action);
+            return;
+          }
+
+          loadWebContent(action, {
+            method,
+            body: formData,
+          });
+        });
+
+        window.addEventListener('popstate', () => {
+          loadWebContent(window.location.pathname + window.location.search, { replaceHistory: true });
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        reinitializeUi(document);
+        setupAsyncNavigation();
+      });
+    </script>
+  </head>
+  <body>
+    <div id="flash-stack" class="flash-stack"></div>
+    {% if current_user %}
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="brand">Kimi Console</div>
+          <div class="brand-subtitle">Managed API gateway & multi-account control</div>
+          {% if current_user.role == "admin" %}
+            <div class="nav-section">
+              <div class="nav-title">Management</div>
+              <a class="nav-link {% if request.url.path == '/web/admin/users' %}active{% endif %}" href="/web/admin/users">用户</a>
+              <a class="nav-link {% if request.url.path.startswith('/web/admin/api-keys') %}active{% endif %}" href="/web/admin/api-keys">用户 API</a>
+              <a class="nav-link {% if request.url.path.startswith('/web/admin/kimi') %}active{% endif %}" href="/web/admin/kimi">Kimi密钥</a>
+              <a class="nav-link {% if request.url.path == '/web/admin/logs' %}active{% endif %}" href="/web/admin/logs">调用日志</a>
+              <a class="nav-link {% if request.url.path == '/web/admin/settings' %}active{% endif %}" href="/web/admin/settings">系统设置</a>
+            </div>
+          {% else %}
+            <div class="nav-section">
+              <div class="nav-title">Workspace</div>
+              <a class="nav-link {% if request.url.path.startswith('/web/me/api-keys') %}active{% endif %}" href="/web/me/api-keys">我的 API</a>
+              <a class="nav-link {% if request.url.path == '/web/me/logs' %}active{% endif %}" href="/web/me/logs">我的日志</a>
+            </div>
+          {% endif %}
+          <div class="nav-section">
+            <div class="nav-title">Account</div>
+            <a class="nav-link {% if request.url.path == '/web/profile/password' %}active{% endif %}" href="/web/profile/password">修改密码</a>
+          </div>
+          <div class="sidebar-user">
+            <div><strong>{{ current_user.username }}</strong></div>
+            <div class="muted">{{ current_user.role }}</div>
+            <form action="/web/logout" method="post" style="margin-top: 12px;" data-confirm="确认退出当前登录会话？">
+              <button class="secondary" type="submit">退出登录</button>
+            </form>
+          </div>
+        </aside>
+        <main class="main" id="main-content">
+          <div class="topbar">
+            <div>
+              <h1 class="headline">{{ title if title else "控制台" }}</h1>
+              <p class="subheadline">现代化管理视图，聚合用户、共享 Kimi 密钥池、调用和限流配置。</p>
+            </div>
+            <div class="toolbar-actions">
+              <button id="theme-toggle" type="button" class="theme-toggle secondary">
+                <span id="theme-toggle-icon">🌙</span>
+                <span id="theme-toggle-label" class="theme-toggle-label">夜间模式</span>
+              </button>
+            </div>
+          </div>
+          {% if message %}
+            <div class="message">{{ message }}</div>
+          {% endif %}
+          {% if error %}
+            <div class="error">{{ error }}</div>
+          {% endif %}
+          {% block content %}{% endblock %}
+        </main>
+      </div>
+    {% else %}
+      {% block unauthenticated_content %}{% endblock %}
+      <div class="toolbar-actions" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+        <button id="theme-toggle" type="button" class="theme-toggle secondary">
+          <span id="theme-toggle-icon">🌙</span>
+          <span id="theme-toggle-label" class="theme-toggle-label">夜间模式</span>
+        </button>
+      </div>
+    {% endif %}
+  </body>
+</html>

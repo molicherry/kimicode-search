@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="hero">
+  <div class="card">
+    <div class="badge info">Kimi密钥状态配置</div>
+    <h2 class="page-section-title">Kimi密钥状态配置</h2>
+    <p class="page-section-subtitle">用于管理系统真正拿去请求 Kimi 的密钥，并配置这些密钥是否启用。所有用户 API 都会共享已启用的 Kimi 密钥池。</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Kimi密钥总数</div><div class="stat-value">{{ kimi_keys|length }}</div></div>
+    <div class="stat"><div class="stat-label">已启用 Kimi 密钥</div><div class="stat-value">{{ kimi_keys | selectattr('is_active') | list | length }}</div></div>
+  </div>
+</div>
+
+{% if new_kimi_key_value %}
+<div class="card">
+  <div class="badge success">一次性密钥提示</div>
+  <h2 class="page-section-title">新的 Kimi 密钥已保存</h2>
+  <p class="page-section-subtitle">完整 Key 仅在当前页面展示一次，请立即复制保存。</p>
+  <div class="copy-field">
+    <input value="{{ new_kimi_key_value }}" readonly />
+    <button type="button" onclick='copyValue({{ new_kimi_key_value|tojson }}, this)'>复制 Kimi 密钥</button>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <h2 class="page-section-title">新增 Kimi 密钥</h2>
+  <p class="page-section-subtitle">新增后的密钥默认启用。所有用户 API 都会共享这里已启用的 Kimi 密钥。</p>
+  <div class="row">
+    <form action="/web/admin/kimi-keys" method="post">
+      <h2>添加 Kimi 密钥</h2>
+      <label>名称</label>
+      <input type="text" name="name" required />
+      <label>Kimi密钥</label>
+      <input type="text" name="api_key" required />
+      <div style="margin-top: 12px;">
+        <button type="submit">保存 Kimi 密钥</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="page-section-title">Kimi密钥列表</h2>
+  <p class="page-section-subtitle">支持按名称、掩码和状态进行筛选，并按页浏览结果。你可以在这里配置每个 Kimi 密钥是否启用，也可以删除不再需要的密钥。</p>
+  <form method="get" class="filter-bar">
+    <div>
+      <label>按名称或掩码搜索</label>
+      <input type="text" name="search" value="{{ filters.search }}" placeholder="请输入名称或掩码关键词" />
+    </div>
+    <div>
+      <label>按状态筛选</label>
+      <select name="status">
+        <option value="">全部状态</option>
+        <option value="active" {% if filters.status == 'active' %}selected{% endif %}>已启用</option>
+        <option value="disabled" {% if filters.status == 'disabled' %}selected{% endif %}>已禁用</option>
+      </select>
+    </div>
+    <div class="filter-actions">
+      <button type="submit">应用筛选</button>
+      <a class="button" href="/web/admin/kimi">清空条件</a>
+    </div>
+  </form>
+  <table>
+    <thead>
+        <tr><th>ID</th><th>名称</th><th>密钥掩码</th><th>状态</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+      {% for key in kimi_keys %}
+        <tr>
+          <td>{{ key.id }}</td>
+          <td>{{ key.name }}</td>
+          <td><span class="key-mask">{{ key.masked_key }}</span></td>
+          <td><span class="badge {{ 'success' if key.is_active else 'warn' }}">{{ '已启用' if key.is_active else '已禁用' }}</span></td>
+          <td>
+            <div class="actions">
+              <form action="/web/admin/kimi-keys/{{ key.id }}/toggle" method="post" data-confirm="确认切换该 Kimi 密钥的启用状态？">
+                <button class="secondary" type="submit">{{ '禁用' if key.is_active else '启用' }}</button>
+              </form>
+              <form action="/web/admin/kimi-keys/{{ key.id }}/delete" method="post" data-confirm="确认删除该 Kimi 密钥？此操作不可撤销。">
+                <button class="danger" type="submit">删除</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if not kimi_keys %}
+    <div class="empty-state">当前筛选条件下没有找到 Kimi 密钥，请调整条件后重试。</div>
+  {% endif %}
+  <div class="pagination">
+    <div class="muted">共 {{ pagination.total }} 条结果，当前第 {{ pagination.page }} / {{ pagination.total_pages }} 页。</div>
+    <div class="pagination-links">
+      {% for page_number in pagination.page_numbers %}
+        <a class="page-chip {% if page_number == pagination.page %}active{% endif %}" href="?search={{ filters.search | urlencode }}&status={{ filters.status }}&page={{ page_number }}">{{ page_number }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
