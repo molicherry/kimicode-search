@@ -3,7 +3,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from auth import hash_api_key, hash_password, mask_secret, mask_visible_ends
+from auth import hash_api_key, hash_password, mask_visible_ends
 
 
 def utc_now_iso() -> str:
@@ -26,6 +26,9 @@ class Database:
         connection = sqlite3.connect(self.db_path)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute("PRAGMA journal_mode = WAL")
+        connection.execute("PRAGMA busy_timeout = 5000")
+        connection.execute("PRAGMA synchronous = NORMAL")
         return connection
 
     def initialize(self) -> None:
@@ -120,6 +123,10 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_user_api_keys_user_id ON user_api_keys(user_id);
                 CREATE INDEX IF NOT EXISTS idx_request_logs_user_id ON request_logs(user_id);
                 CREATE INDEX IF NOT EXISTS idx_request_logs_created_at ON request_logs(created_at);
+                CREATE INDEX IF NOT EXISTS idx_request_logs_user_id_id ON request_logs(user_id, id DESC);
+                CREATE INDEX IF NOT EXISTS idx_request_logs_user_id_success ON request_logs(user_id, success);
+                CREATE INDEX IF NOT EXISTS idx_user_api_keys_user_id_id ON user_api_keys(user_id, id DESC);
+                CREATE INDEX IF NOT EXISTS idx_kimi_api_keys_is_active_id ON kimi_api_keys(is_active, id ASC);
                 """
             )
 
@@ -169,6 +176,13 @@ class Database:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def list_users_for_select(self):
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT id, username, is_active FROM users ORDER BY username ASC"
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_users_paginated(
         self,
         search: str = "",
@@ -190,7 +204,7 @@ class Database:
         elif status == "disabled":
             conditions.append("is_active = 0")
 
-        query = "SELECT * FROM users"
+        query = "SELECT id, username, role, is_active, last_login_at, created_at, updated_at FROM users"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         query += " ORDER BY id DESC"
@@ -440,6 +454,14 @@ class Database:
                 (1 if is_active else 0, now, kimi_api_key_id),
             )
 
+    def get_kimi_api_key_status(self, kimi_api_key_id: int):
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT id, is_active FROM kimi_api_keys WHERE id = ?",
+                (kimi_api_key_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
     def delete_kimi_api_key(self, kimi_api_key_id: int) -> None:
         with self.connect() as connection:
             connection.execute("DELETE FROM kimi_api_keys WHERE id = ?", (kimi_api_key_id,))
@@ -591,6 +613,16 @@ class Database:
             ).fetchone()
         return row["value"] if row else default
 
+    def get_settings(self, keys: list[str]) -> dict[str, str]:
+        if not keys:
+            return {}
+        placeholders = ", ".join("?" for _ in keys)
+        query = f"SELECT key, value FROM system_settings WHERE key IN ({placeholders})"
+        with self.connect() as connection:
+            rows = connection.execute(query, keys).fetchall()
+        values = {row["key"]: row["value"] for row in rows}
+        return {key: values.get(key, "") for key in keys}
+
     def get_usage_summary_for_user(self, user_id: int):
         with self.connect() as connection:
             total_logs = connection.execute(
@@ -609,4 +641,19 @@ class Database:
             "total_logs": int(total_logs),
             "success_logs": int(success_logs),
             "api_count": int(api_count),
+        }
+
+    def get_user_log_summary(self, user_id: int):
+        with self.connect() as connection:
+            total_logs = connection.execute(
+                "SELECT COUNT(*) AS value FROM request_logs WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()["value"]
+            success_logs = connection.execute(
+                "SELECT COUNT(*) AS value FROM request_logs WHERE user_id = ? AND success = 1",
+                (user_id,),
+            ).fetchone()["value"]
+        return {
+            "total_logs": int(total_logs),
+            "success_logs": int(success_logs),
         }

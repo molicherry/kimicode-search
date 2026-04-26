@@ -6,15 +6,24 @@ Repository guidance for coding agents working in `kimicode-search`.
 
 - Language: Python.
 - Dependency management: `pip` via `requirements.txt`.
-- Runtime dependency in repo: `mcp==1.26.0`.
-- App shape: one main application file, `server.py`.
-- Deployment files: `Dockerfile`, `compose.yaml`, `Caddyfile`.
-- Env templates: `.env.example`, `.env.production.example`.
-- Purpose: expose Kimi Coding Search / Fetch APIs as MCP tools.
+- Runtime dependencies: `mcp==1.26.0`, `fastapi`, `uvicorn`, `jinja2`, `python-multipart`.
+- Main entrypoint: `python server.py`.
+- MCP tools exposed: `kimi_search`, `kimi_fetch`.
+- Two modes:
+  - legacy/compat mode: accepts downstream real Kimi key via `X-Kimi-Api-Key`
+  - WebUI managed mode: accepts platform-issued user API keys only
+- Core behavior lives in `server.py`; keep changes local unless a new module is clearly needed.
 
 ## Repository map
 
-- `server.py` — main app logic, helper functions, Kimi client, MCP tools, CLI.
+- `server.py` — main entrypoint, FastMCP wiring, `KimiCodingClient`, HTTP/stdio startup.
+- `config.py` — env-based config loading (`AppConfig`), boolean/int helpers.
+- `db.py` — SQLite schema, `Database` CRUD/rate-limit helpers.
+- `auth.py` — password hashing, session/API-key generation.
+- `ratelimit.py` — per-endpoint RPM enforcement.
+- `audit.py` — managed-mode request audit writes.
+- `webui.py` — FastAPI router for `/web/*` admin/user pages.
+- `templates/` — Jinja HTML templates rendered by `webui.py`.
 - `requirements.txt` — dependency list.
 - `README.md` — setup, deployment, env variable documentation.
 - `Dockerfile` — container build and default HTTP startup command.
@@ -25,12 +34,13 @@ Repository guidance for coding agents working in `kimicode-search`.
 
 Checked repository contents:
 
-- No `AGENTS.md` existed before this file was added.
 - No `.cursor/rules/` directory found.
 - No `.cursorrules` file found.
 - No `.github/copilot-instructions.md` file found.
 
 Do not reference Cursor/Copilot repository rules unless they are added later.
+
+NOTE: The production compose deployment requires a `.env.production` file; create it from `.env.production.example` before starting services.
 
 ## Core agent behavior
 
@@ -40,6 +50,8 @@ Do not reference Cursor/Copilot repository rules unless they are added later.
 - Do not add dependencies without a strong reason.
 - Do not fabricate project tooling that is not present.
 - If behavior changes, update docs and env templates in the same change.
+- For runtime settings, check `config.py` and `server.py` before guessing defaults.
+- The app does **not** auto-load a `.env` file; production compose expects `.env.production` via `env_file`.
 
 ## Setup commands
 
@@ -88,6 +100,7 @@ Run compose deployment:
 ```bash
 docker compose up -d --build
 ```
+
 
 ## Build / lint / test reality
 
@@ -224,6 +237,7 @@ When changing flags, ports, env vars, startup behavior, or deployment assumption
 - `.env.production.example`
 - `Dockerfile`
 - `compose.yaml`
+
 
 ## Final reminders
 

@@ -3,6 +3,7 @@
 <div class="card" style="max-width: 760px;">
   <h2 class="page-section-title">系统设置</h2>
   <p class="page-section-subtitle">调整日志级别与日志预览长度，影响控制台和审计展示体验。</p>
+  <div class="badge warn" style="margin-bottom: 12px;">当前说明：这些设置仅保存在数据库中，运行时默认仍按环境变量生效。若服务端尚未接入 DB 配置，保存后不会立即改变现有日志行为。</div>
   <form action="/web/admin/settings" method="post">
     <label>日志等级</label>
     <input type="text" name="log_level" value="{{ log_level }}" />

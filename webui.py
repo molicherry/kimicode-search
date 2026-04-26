@@ -39,8 +39,14 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
             return None
         return database.get_session(session_id)
 
+    def _resolve_current_user(request: Request):
+        if not getattr(request.state, "user_resolved", False):
+            request.state.current_user = current_user(request)
+            request.state.user_resolved = True
+        return request.state.current_user
+
     def require_user(request: Request):
-        user = current_user(request)
+        user = _resolve_current_user(request)
         if user is None:
             return None, _redirect("/web/login")
         return user, None
@@ -54,10 +60,13 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
             return None, HTMLResponse("Forbidden", status_code=403)
         return existing_user, None
 
-    def render(request: Request, template_name: str, context: dict, status_code: int = 200):
+    def render(request: Request, template_name: str, context: dict, status_code: int = 200, current_user: object | None = None):
+        resolved_user = current_user
+        if resolved_user is None and template_name not in {"login.html"}:
+            resolved_user = _resolve_current_user(request)
         base_context = {
             "request": request,
-            "current_user": current_user(request),
+            "current_user": resolved_user,
             "message": request.query_params.get("message", ""),
             "error": request.query_params.get("error", ""),
         }
@@ -105,7 +114,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
         keys = paginated["items"]
         return {
             "api_keys": keys,
-            "users": database.list_users(),
+            "users": database.list_users_for_select(),
             "new_key_value": "",
             "created_key_owner": "",
             "filters": filters,
@@ -155,7 +164,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
 
     @router.get("/", response_class=HTMLResponse)
     def web_home(request: Request):
-        user = current_user(request)
+        user = _resolve_current_user(request)
         if user is None:
             return _redirect("/web/login")
         if user["role"] == "admin":
@@ -209,7 +218,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
         user, response = require_user(request)
         if response is not None:
             return response
-        return render(request, "password.html", {"target_user": user, "is_self": True})
+        return render(request, "password.html", {"target_user": user, "is_self": True}, current_user=user)
 
     @router.post("/profile/password")
     async def password_submit(
@@ -254,6 +263,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
                 "pagination": pagination_context(paginated),
                 "title": "用户管理",
             },
+            current_user=user,
         )
 
     @router.post("/admin/users")
@@ -302,10 +312,10 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
 
     @router.get("/admin/api-keys", response_class=HTMLResponse)
     def admin_api_keys(request: Request):
-        _, response = require_admin(request)
+        user, response = require_admin(request)
         if response is not None:
             return response
-        return render(request, "admin_api_keys.html", {**admin_api_keys_context(request), "title": "用户 API 管理"})
+        return render(request, "admin_api_keys.html", {**admin_api_keys_context(request), "title": "用户 API 管理"}, current_user=user)
 
     @router.post("/admin/api-keys")
     async def admin_create_api_key(
@@ -317,7 +327,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
         expires_at: str = Form(""),
         group_ids: list[int] = Form(default=[]),
     ):
-        _, response = require_admin(request)
+        user, response = require_admin(request)
         if response is not None:
             return response
         validation_error = validate_api_form(name, search_rpm, fetch_rpm)
@@ -338,7 +348,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
         context["created_key_owner"] = owner["username"] if owner else ""
         context["message"] = "新用户 API 已创建，请立即复制保存。"
         context["title"] = "用户 API 管理"
-        return render(request, "admin_api_keys.html", context)
+        return render(request, "admin_api_keys.html", context, current_user=user)
 
     @router.post("/admin/api-keys/{key_id}/toggle")
     async def admin_toggle_api_key(request: Request, key_id: int):
@@ -361,10 +371,10 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
 
     @router.get("/admin/kimi", response_class=HTMLResponse)
     def admin_kimi(request: Request):
-        _, response = require_admin(request)
+        user, response = require_admin(request)
         if response is not None:
             return response
-        return render(request, "admin_kimi.html", {**admin_kimi_context(request), "title": "Kimi密钥状态配置"})
+        return render(request, "admin_kimi.html", {**admin_kimi_context(request), "title": "Kimi密钥状态配置"}, current_user=user)
 
     @router.post("/admin/kimi-keys")
     async def admin_create_kimi_key(
@@ -372,7 +382,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
         name: str = Form(...),
         api_key: str = Form(...),
     ):
-        _, response = require_admin(request)
+        user, response = require_admin(request)
         if response is not None:
             return response
         if not name.strip() or not api_key.strip():
@@ -382,15 +392,14 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
         context["new_kimi_key_value"] = api_key.strip()
         context["message"] = "Kimi 密钥已保存，请立即复制保存。"
         context["title"] = "Kimi密钥状态配置"
-        return render(request, "admin_kimi.html", context)
+        return render(request, "admin_kimi.html", context, current_user=user)
 
     @router.post("/admin/kimi-keys/{key_id}/toggle")
     async def admin_toggle_kimi_key(request: Request, key_id: int):
         _, response = require_admin(request)
         if response is not None:
             return response
-        keys = database.list_kimi_api_keys()
-        target = next((item for item in keys if int(item["id"]) == key_id), None)
+        target = database.get_kimi_api_key_status(key_id)
         if target is None:
             return _redirect("/web/admin/kimi?error=未找到要操作的 Kimi 密钥。")
         database.set_kimi_api_key_active(key_id, not bool(target["is_active"]))
@@ -401,8 +410,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
         _, response = require_admin(request)
         if response is not None:
             return response
-        keys = database.list_kimi_api_keys()
-        target = next((item for item in keys if int(item["id"]) == key_id), None)
+        target = database.get_kimi_api_key_status(key_id)
         if target is None:
             return _redirect("/web/admin/kimi?error=未找到要删除的 Kimi 密钥。")
         database.delete_kimi_api_key(key_id)
@@ -410,7 +418,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
 
     @router.get("/admin/logs", response_class=HTMLResponse)
     def admin_logs(request: Request):
-        _, response = require_admin(request)
+        user, response = require_admin(request)
         if response is not None:
             return response
         filters = {
@@ -435,11 +443,12 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
                 "pagination": pagination_context(paginated),
                 "title": "全局调用日志",
             },
+            current_user=user,
         )
 
     @router.get("/admin/settings", response_class=HTMLResponse)
     def admin_settings(request: Request):
-        _, response = require_admin(request)
+        user, response = require_admin(request)
         if response is not None:
             return response
         return render(
@@ -450,6 +459,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
                 "log_preview_bytes": database.get_setting("log_preview_bytes", "100"),
                 "title": "系统设置",
             },
+            current_user=user,
         )
 
     @router.post("/admin/settings")
@@ -475,6 +485,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
             request,
             "user_api_keys.html",
             {**user_api_keys_context(request, int(existing_user["id"])), "title": "我的用户 API"},
+            current_user=existing_user,
         )
 
     @router.post("/me/api-keys")
@@ -505,7 +516,7 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
         context["new_key_value"] = raw_key
         context["message"] = "新的用户 API 已创建，请立即复制保存。"
         context["title"] = "我的用户 API"
-        return render(request, "user_api_keys.html", context)
+        return render(request, "user_api_keys.html", context, current_user=existing_user)
 
     @router.post("/me/api-keys/{key_id}/delete")
     async def my_delete_api_key(request: Request, key_id: int):
@@ -544,11 +555,12 @@ def create_web_router(config, database, templates_dir: str) -> APIRouter:
             "user_logs.html",
             {
                 "logs": paginated["items"],
-                "usage": database.get_usage_summary_for_user(int(existing_user["id"])),
+                "usage": database.get_user_log_summary(int(existing_user["id"])),
                 "filters": filters,
                 "pagination": pagination_context(paginated),
                 "title": "我的调用日志",
             },
+            current_user=existing_user,
         )
 
     return router
